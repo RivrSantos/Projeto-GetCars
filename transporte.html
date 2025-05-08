@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculadora de Veículo Ideal</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      background: #f0f4f8;
+      color: #333;
+      display: flex;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 250px;
+      background-color: #34495e;
+      position: fixed;
+      top: 0;
+      left: 0;
+      padding-top: 20px;
+      height: 100vh;
+    }
+    .sidebar a {
+      padding: 15px;
+      display: block;
+      color: white;
+      text-decoration: none;
+    }
+    .sidebar a.active {
+      background: #2980b9;
+      font-weight: bold;
+    }
+    .sidebar a:hover {
+      background-color: #576574;
+    }
+    .content {
+      margin-left: 250px;
+      padding: 20px;
+      flex: 1;
+    }
+    #calculator {
+      background: #e3f2fd;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin: 10px 0 5px;
+    }
+    input, select, button {
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 15px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #2ecc71;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #27ae60;
+    }
+    #result {
+      background: #dff0d8;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 20px;
+      font-weight: bold;
+      color: #3c763d;
+    }
+    .vehicle-image {
+      max-width: 500px;
+      display: block;
+      margin: 0 auto 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <a href="#" onclick="event.preventDefault()" class="active">Todos</a>
+    <a href="#" onclick="event.preventDefault()">Compacto</a>
+    <a href="#" onclick="event.preventDefault()">Hatch</a>
+    <a href="#" onclick="event.preventDefault()">Picape Leve</a>
+    <a href="#" onclick="event.preventDefault()">Picape Média</a>
+    <a href="#" onclick="event.preventDefault()">Picape Grande</a>
+    <a href="#" onclick="event.preventDefault()">Subcompacto</a>
+    <a href="#" onclick="event.preventDefault()">Minivan</a>
+    <a href="#" onclick="event.preventDefault()">VUC</a>
+  </div>
+
+  <div class="content">
+    <div id="calculator">
+      <h2>Calcular Melhor Veículo para o Trajeto</h2>
+      <label for="distancia">Distância do Trajeto (km):</label>
+      <input type="number" id="distancia" required>
+
+      <label for="carga">Peso da Carga (kg):</label>
+      <input type="number" id="carga" required>
+
+      <label for="valor-combustivel">Valor Médio do Combustível (R$/litro):</label>
+      <input type="number" id="valor-combustivel" required>
+
+      <label for="combustivel-preferido">Tipo de Combustível Preferido:</label>
+      <select id="combustivel-preferido">
+        <option value="todos">Todos</option>
+        <option value="Flex">Flex</option>
+        <option value="Gasolina">Gasolina</option>
+        <option value="Diesel">Diesel</option>
+      </select>
+
+      <button onclick="calcularVeiculo()">Encontrar Veículo Ideal</button>
+      <button onclick="location.reload()">Limpar</button>
+      <!-- <button href="https://www.google.com.br/maps">Ver Mapa</button> -->
+
+      <div id="result"></div>
+    </div>
+
+    <canvas id="grafico-consumo" style="max-width:600px; margin-top:30px;"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+  const veiculos = [
+    {modelo: 'Fiat Uno', categoria: 'Compacto', capacidade: 400, consumo: 15, tipoCombustivel: 'Gasolina', imagem: 'https://portalhortolandia.com.br/wp-content/uploads/2024/02/novo_uno.jpg'},
+    {modelo: 'Fiat Strada', categoria: 'Picape Leve', capacidade: 700, consumo: 12, tipoCombustivel: 'Flex', imagem: 'https://garagem360.com.br/wp-content/uploads/2024/05/1_fiat-strada-freedom-cabine-dupla-2025-5.jpg'},
+    {modelo: 'Toyota Hilux', categoria: 'Picape Média', capacidade: 1000, consumo: 10, tipoCombustivel: 'Diesel', imagem: 'https://production.autoforce.com/uploads/version/profile_image/12027/model_main_webp_comprar-srx-plus-at_03460cd51c.png.webp'},
+    {modelo: 'Chevrolet Onix', categoria: 'Hatch', capacidade: 380, consumo: 16, tipoCombustivel: 'Flex', imagem: 'https://www.chevrolet.com.br/content/dam/chevrolet/south-america/brazil/portuguese/index/cars/2023-onix/mov/06-images/versiones-2025/onix-lt.jpg?imwidth=960'},
+    {modelo: 'Volkswagen Gol', categoria: 'Hatch', capacidade: 390, consumo: 15.5, tipoCombustivel: 'Flex', imagem: 'https://www.tabelafipebrasil.com/site/images/modelos/png/tabela-fipe-vw---volkswagen-gol.png'},
+    {modelo: 'Ford Ka', categoria: 'Compacto', capacidade: 370, consumo: 17, tipoCombustivel: 'Flex', imagem: 'https://www.diariomotor.com/imagenes/2018/02/ford-ka-2018-p.jpg?class=XL'},
+    {modelo: 'Renault Kwid', categoria: 'Subcompacto', capacidade: 350, consumo: 18, tipoCombustivel: 'Flex', imagem: 'https://http2.mlstatic.com/D_NQ_NP_935001-MLA79694293607_102024-B.webp'},
+    {modelo: 'Kia Bongo', categoria: 'VUC', capacidade: 1800, consumo: 8, tipoCombustivel: 'Diesel', imagem: 'https://fotos-estradao-estadao.nyc3.cdn.digitaloceanspaces.com/wp-content/uploads/2024/07/16183726/kiabongo2025_02-1160x653.jpg'}
+  ];
+  
+  let graficoConsumo = null;
+  
+  function atualizarGrafico(lista) {
+    const ctx = document.getElementById('grafico-consumo').getContext('2d');
+    if (graficoConsumo) graficoConsumo.destroy();
+  
+    graficoConsumo = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: lista.map(v => v.modelo),
+        datasets: [{
+          label: 'Consumo (km/l)',
+          data: lista.map(v => v.consumo),
+          backgroundColor: 'rgba(46, 204, 113, 0.7)'
+        }]
+      },
+      options: {
+        plugins: {
+          title: { display: true, text: 'Top Veículos por Consumo' },
+          legend: { display: false }
+        },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  }
+  
+  function calcularVeiculo() {
+    const distancia = parseFloat(document.getElementById('distancia').value);
+    const carga = parseFloat(document.getElementById('carga').value);
+    const valorCombustivel = parseFloat(document.getElementById('valor-combustivel').value);
+    const tipoPreferido = document.getElementById('combustivel-preferido').value;
+    const categoria = document.querySelector('.sidebar a.active')?.textContent.trim() || 'todos';
+    const resultDiv = document.getElementById('result');
+  
+    if (isNaN(distancia) || isNaN(carga) || isNaN(valorCombustivel)) {
+      resultDiv.innerHTML = 'Preencha todos os campos corretamente.';
+      return;
+    }
+  
+    const filtrados = veiculos
+      .filter(v =>
+        (categoria === 'todos' || v.categoria === categoria) &&
+        v.capacidade >= carga &&
+        (tipoPreferido === 'todos' || v.tipoCombustivel === tipoPreferido)
+      )
+      .sort((a, b) => b.consumo - a.consumo);
+  
+    if (!filtrados.length) {
+      resultDiv.innerHTML = 'Nenhum veículo adequado encontrado.';
+      atualizarGrafico([]);
+      return;
+    }
+  
+    const veiculo = filtrados[0];
+    const litros = distancia / veiculo.consumo;
+    const custo = litros * valorCombustivel;
+  
+    // Resultado principal
+    let html = `
+      <h3>🚗 Veículo Ideal</h3>
+      <img src="${veiculo.imagem}" alt="${veiculo.modelo}" class="vehicle-image">
+      <p><b>${veiculo.modelo}</b> (${veiculo.categoria})</p>
+      <p>Consumo: <b>${veiculo.consumo} km/l</b> | Tipo: <b>${veiculo.tipoCombustivel}</b></p>
+      <p>Litros necessários: <b>${litros.toFixed(2)} L</b></p>
+      <p>Custo estimado: <b>R$ ${custo.toFixed(2)}</b></p>`;
+  
+    // Tabela comparativa dos 3 melhores
+    const top3 = filtrados.slice(0, 3);
+    html += `
+      <h3>🔍 Comparação dos 3 Mais Econômicos</h3>
+      <table border="1" style="width:100%; border-collapse:collapse; text-align:center;">
+        <thead>
+          <tr>
+            <th>Imagem</th>
+            <th>Modelo</th>
+            <th>Categoria</th>
+            <th>Combustível</th>
+            <th>Consumo (km/l)</th>
+            <th>Litros</th>
+            <th>Custo (R$)</th>
+          </tr>
+        </thead>
+        <tbody>`;
+  
+    top3.forEach(v => {
+      const litrosV = distancia / v.consumo;
+      const custoV = litrosV * valorCombustivel;
+      html += `
+        <tr>
+          <td><img src="${v.imagem}" style="width:60px;"></td>
+          <td>${v.modelo}</td>
+          <td>${v.categoria}</td>
+          <td>${v.tipoCombustivel}</td>
+          <td>${v.consumo}</td>
+          <td>${litrosV.toFixed(2)}</td>
+          <td>${custoV.toFixed(2)}</td>
+        </tr>`;
+    });
+  
+    html += `</tbody></table>`;
+  
+    resultDiv.innerHTML = html;
+    atualizarGrafico(top3);
+  }
+  
+  document.querySelectorAll('.sidebar a').forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      document.querySelectorAll('.sidebar a').forEach(l => l.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+  </script>
+  
+    
+</body>
+</html>
